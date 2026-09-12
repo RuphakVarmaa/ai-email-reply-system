@@ -1,0 +1,1164 @@
+{
+  "overall": {
+    "n": 19,
+    "mean_composite": 0.9135,
+    "ci95": [
+      0.856,
+      0.9439
+    ],
+    "median_composite": 0.9325,
+    "mean_components": {
+      "coverage": 1.0,
+      "faithfulness": 0.95,
+      "action_correctness": 1.0,
+      "tone": 0.8,
+      "entity_accuracy": 0.7983
+    },
+    "gate_failure_rate": 0.0526,
+    "by_intent": {
+      "defect_warranty": 0.8367,
+      "refund_request": 0.9575,
+      "shipping_delay": 0.9242
+    },
+    "by_register": {
+      "calm": 0.9575,
+      "chatty": 0.9284,
+      "frustrated": 0.9464,
+      "furious": 0.9381,
+      "grateful": 0.9242,
+      "professional": 0.9325,
+      "terse": 0.8253
+    },
+    "score_histogram": [
+      0,
+      0,
+      1,
+      0,
+      18
+    ],
+    "n_below_050": 1,
+    "n_above_080": 18,
+    "mode": "rag",
+    "gen_model": "gemini-flash-lite-latest",
+    "judge_model": "reference-validation",
+    "note": "Scored with mock judge on reference replies (baseline validation)"
+  },
+  "per_response": [
+    {
+      "id": "shipping_delay-49225367",
+      "intent": "shipping_delay",
+      "register": "professional",
+      "composite": 0.9242,
+      "components": {
+        "coverage": 1.0,
+        "faithfulness": 0.95,
+        "action_correctness": 1.0,
+        "tone": 0.8,
+        "entity_accuracy": 0.6667
+      },
+      "gate_failures": [],
+      "fact_checks": [
+        {
+          "name": "order_number",
+          "verdict": "PASS",
+          "detail": "reply cites order 30374-5569244",
+          "severity": "major"
+        },
+        {
+          "name": "item_reference",
+          "verdict": "FAIL",
+          "detail": "reply never mentions the item 'Stormshell 3L Rain Jacket'",
+          "severity": "minor"
+        },
+        {
+          "name": "express_fee",
+          "verdict": "PASS",
+          "detail": "express fee $9.99 correct",
+          "severity": "major"
+        }
+      ],
+      "claims": [
+        "policy claim",
+        "action claim"
+      ],
+      "verdicts": [
+        {
+          "claim": "policy claim",
+          "verdict": "SUPPORTED",
+          "why": "matches KB"
+        },
+        {
+          "claim": "action claim",
+          "verdict": "SUPPORTED",
+          "why": "correct action"
+        }
+      ],
+      "coverage_detail": [],
+      "reply_excerpt": "Dear Valued Procurement Partner,\n\nWe sincerely apologize for the delay regarding order 30374-5569244. We understand that adhering to your internal procurement schedule is critical for your operations."
+    },
+    {
+      "id": "defect_warranty-87883829",
+      "intent": "defect_warranty",
+      "register": "terse",
+      "composite": 0.9325,
+      "components": {
+        "coverage": 1.0,
+        "faithfulness": 0.95,
+        "action_correctness": 1.0,
+        "tone": 0.8,
+        "entity_accuracy": 0.75
+      },
+      "gate_failures": [],
+      "fact_checks": [
+        {
+          "name": "order_number",
+          "verdict": "PASS",
+          "detail": "reply cites order 64377-7838382",
+          "severity": "major"
+        },
+        {
+          "name": "item_reference",
+          "verdict": "FAIL",
+          "detail": "reply never mentions the item 'Ridgeline -20°C Sleeping Bag'",
+          "severity": "minor"
+        },
+        {
+          "name": "warranty_duration",
+          "verdict": "PASS",
+          "detail": "reply states correct 24-month warranty",
+          "severity": "major"
+        },
+        {
+          "name": "warranty_decision",
+          "verdict": "PASS",
+          "detail": "reply correctly honors warranty",
+          "severity": "major"
+        }
+      ],
+      "claims": [
+        "policy claim",
+        "action claim"
+      ],
+      "verdicts": [
+        {
+          "claim": "policy claim",
+          "verdict": "SUPPORTED",
+          "why": "matches KB"
+        },
+        {
+          "claim": "action claim",
+          "verdict": "SUPPORTED",
+          "why": "correct action"
+        }
+      ],
+      "coverage_detail": [],
+      "reply_excerpt": "Order 64377-7838382. \n\nThe 24-month warranty covers buckle cracks. At 18 months, your claim is within the warranty period. \n\nPlease reply with a photo showing the buckle defect. \n\nWe ship your replace"
+    },
+    {
+      "id": "refund_request-23214565",
+      "intent": "refund_request",
+      "register": "furious",
+      "composite": 0.9575,
+      "components": {
+        "coverage": 1.0,
+        "faithfulness": 0.95,
+        "action_correctness": 1.0,
+        "tone": 0.8,
+        "entity_accuracy": 1.0
+      },
+      "gate_failures": [],
+      "fact_checks": [
+        {
+          "name": "order_number",
+          "verdict": "PASS",
+          "detail": "reply cites order 59797-2622631",
+          "severity": "major"
+        },
+        {
+          "name": "price",
+          "verdict": "PASS",
+          "detail": "reply cites correct amount $159.00",
+          "severity": "major"
+        },
+        {
+          "name": "item_reference",
+          "verdict": "PASS",
+          "detail": "reply references the item 'Summit Midweight Hiking Boots (Women's)'",
+          "severity": "major"
+        },
+        {
+          "name": "return_window",
+          "verdict": "PASS",
+          "detail": "reply states correct 30-day return window",
+          "severity": "major"
+        },
+        {
+          "name": "refund_eligibility",
+          "verdict": "PASS",
+          "detail": "reply proceeds with refund (eligible)",
+          "severity": "major"
+        }
+      ],
+      "claims": [
+        "policy claim",
+        "action claim"
+      ],
+      "verdicts": [
+        {
+          "claim": "policy claim",
+          "verdict": "SUPPORTED",
+          "why": "matches KB"
+        },
+        {
+          "claim": "action claim",
+          "verdict": "SUPPORTED",
+          "why": "correct action"
+        }
+      ],
+      "coverage_detail": [],
+      "reply_excerpt": "We are issuing a full $159.00 refund for your Summit Midweight Hiking Boots (Women's) from order 59797-2622631 to your original payment method. The funds will appear in your account in 5–7 business da"
+    },
+    {
+      "id": "defect_warranty-35038210",
+      "intent": "defect_warranty",
+      "register": "professional",
+      "composite": 0.9325,
+      "components": {
+        "coverage": 1.0,
+        "faithfulness": 0.95,
+        "action_correctness": 1.0,
+        "tone": 0.8,
+        "entity_accuracy": 0.75
+      },
+      "gate_failures": [],
+      "fact_checks": [
+        {
+          "name": "order_number",
+          "verdict": "PASS",
+          "detail": "reply cites order 77561-6623525",
+          "severity": "major"
+        },
+        {
+          "name": "item_reference",
+          "verdict": "FAIL",
+          "detail": "reply never mentions the item 'Basecamp 2-Person Cook Set'",
+          "severity": "minor"
+        },
+        {
+          "name": "warranty_duration",
+          "verdict": "PASS",
+          "detail": "reply states correct 24-month warranty",
+          "severity": "major"
+        },
+        {
+          "name": "warranty_decision",
+          "verdict": "PASS",
+          "detail": "reply correctly honors warranty",
+          "severity": "major"
+        }
+      ],
+      "claims": [
+        "policy claim",
+        "action claim"
+      ],
+      "verdicts": [
+        {
+          "claim": "policy claim",
+          "verdict": "SUPPORTED",
+          "why": "matches KB"
+        },
+        {
+          "claim": "action claim",
+          "verdict": "SUPPORTED",
+          "why": "correct action"
+        }
+      ],
+      "coverage_detail": [],
+      "reply_excerpt": "Dear Valued Client,\n\nThank you for contacting Northwind Supply Co. regarding your recent procurement order 77561-6623525. We understand that equipment reliability is critical to your operational workf"
+    },
+    {
+      "id": "defect_warranty-63895827",
+      "intent": "defect_warranty",
+      "register": "furious",
+      "composite": 0.9325,
+      "components": {
+        "coverage": 1.0,
+        "faithfulness": 0.95,
+        "action_correctness": 1.0,
+        "tone": 0.8,
+        "entity_accuracy": 0.75
+      },
+      "gate_failures": [],
+      "fact_checks": [
+        {
+          "name": "order_number",
+          "verdict": "PASS",
+          "detail": "reply cites order 59689-6492066",
+          "severity": "major"
+        },
+        {
+          "name": "item_reference",
+          "verdict": "FAIL",
+          "detail": "reply never mentions the item 'Basecamp 2-Person Cook Set'",
+          "severity": "minor"
+        },
+        {
+          "name": "warranty_duration",
+          "verdict": "PASS",
+          "detail": "reply states correct 24-month warranty",
+          "severity": "major"
+        },
+        {
+          "name": "warranty_decision",
+          "verdict": "PASS",
+          "detail": "reply correctly honors warranty",
+          "severity": "major"
+        }
+      ],
+      "claims": [
+        "policy claim",
+        "action claim"
+      ],
+      "verdicts": [
+        {
+          "claim": "policy claim",
+          "verdict": "SUPPORTED",
+          "why": "matches KB"
+        },
+        {
+          "claim": "action claim",
+          "verdict": "SUPPORTED",
+          "why": "correct action"
+        }
+      ],
+      "coverage_detail": [],
+      "reply_excerpt": "We completely understand your frustration and apologize for the disappointment caused by the seam split on your recent purchase. Please be assured that our 24-month warranty fully covers this issue, a"
+    },
+    {
+      "id": "shipping_delay-88635248",
+      "intent": "shipping_delay",
+      "register": "chatty",
+      "composite": 0.9242,
+      "components": {
+        "coverage": 1.0,
+        "faithfulness": 0.95,
+        "action_correctness": 1.0,
+        "tone": 0.8,
+        "entity_accuracy": 0.6667
+      },
+      "gate_failures": [],
+      "fact_checks": [
+        {
+          "name": "order_number",
+          "verdict": "PASS",
+          "detail": "reply cites order 11267-2876932",
+          "severity": "major"
+        },
+        {
+          "name": "item_reference",
+          "verdict": "FAIL",
+          "detail": "reply never mentions the item 'Stormshell 3L Rain Jacket'",
+          "severity": "minor"
+        },
+        {
+          "name": "express_fee",
+          "verdict": "PASS",
+          "detail": "express fee $9.99 correct",
+          "severity": "major"
+        }
+      ],
+      "claims": [
+        "policy claim",
+        "action claim"
+      ],
+      "verdicts": [
+        {
+          "claim": "policy claim",
+          "verdict": "SUPPORTED",
+          "why": "matches KB"
+        },
+        {
+          "claim": "action claim",
+          "verdict": "SUPPORTED",
+          "why": "correct action"
+        }
+      ],
+      "coverage_detail": [],
+      "reply_excerpt": "Hello! Thanks for reaching out about order number 11267-2876932. I am so sorry for the delay! We've had some wild weather hit our regional transit hub, which has slowed things down just a bit—it remin"
+    },
+    {
+      "id": "defect_warranty-88249770",
+      "intent": "defect_warranty",
+      "register": "terse",
+      "composite": 0.4537,
+      "components": {
+        "coverage": 1.0,
+        "faithfulness": 0.95,
+        "action_correctness": 1.0,
+        "tone": 0.8,
+        "entity_accuracy": 0.5
+      },
+      "gate_failures": [
+        "1 major fact-check failure(s): reply claims 18-month warranty; KB says 24"
+      ],
+      "fact_checks": [
+        {
+          "name": "order_number",
+          "verdict": "PASS",
+          "detail": "reply cites order 68008-9468772",
+          "severity": "major"
+        },
+        {
+          "name": "item_reference",
+          "verdict": "FAIL",
+          "detail": "reply never mentions the item 'Featherlight Camp Chair'",
+          "severity": "minor"
+        },
+        {
+          "name": "warranty_duration",
+          "verdict": "FAIL",
+          "detail": "reply claims 18-month warranty; KB says 24",
+          "severity": "major"
+        },
+        {
+          "name": "warranty_decision",
+          "verdict": "PASS",
+          "detail": "reply correctly honors warranty",
+          "severity": "major"
+        }
+      ],
+      "claims": [
+        "policy claim",
+        "action claim"
+      ],
+      "verdicts": [
+        {
+          "claim": "policy claim",
+          "verdict": "SUPPORTED",
+          "why": "matches KB"
+        },
+        {
+          "claim": "action claim",
+          "verdict": "SUPPORTED",
+          "why": "correct action"
+        }
+      ],
+      "coverage_detail": [],
+      "reply_excerpt": "Your 18-month-old boots are fully covered under our 24-month warranty for waterproof membrane leaks. To process your replacement, please reply with your order number, 68008-9468772, and a clear photo "
+    },
+    {
+      "id": "shipping_delay-52083301",
+      "intent": "shipping_delay",
+      "register": "professional",
+      "composite": 0.9242,
+      "components": {
+        "coverage": 1.0,
+        "faithfulness": 0.95,
+        "action_correctness": 1.0,
+        "tone": 0.8,
+        "entity_accuracy": 0.6667
+      },
+      "gate_failures": [],
+      "fact_checks": [
+        {
+          "name": "order_number",
+          "verdict": "PASS",
+          "detail": "reply cites order 82667-3135534",
+          "severity": "major"
+        },
+        {
+          "name": "item_reference",
+          "verdict": "FAIL",
+          "detail": "reply never mentions the item 'Basecamp 2-Person Cook Set'",
+          "severity": "minor"
+        },
+        {
+          "name": "express_fee",
+          "verdict": "PASS",
+          "detail": "express fee $9.99 correct",
+          "severity": "major"
+        }
+      ],
+      "claims": [
+        "policy claim",
+        "action claim"
+      ],
+      "verdicts": [
+        {
+          "claim": "policy claim",
+          "verdict": "SUPPORTED",
+          "why": "matches KB"
+        },
+        {
+          "claim": "action claim",
+          "verdict": "SUPPORTED",
+          "why": "correct action"
+        }
+      ],
+      "coverage_detail": [],
+      "reply_excerpt": "Dear Valued Client,\n\nThank you for contacting Northwind Supply Co. regarding order number 82667-3135534. We sincerely apologize for the delay in fulfilling your procurement timeline. \n\nYour shipment i"
+    },
+    {
+      "id": "shipping_delay-99820140",
+      "intent": "shipping_delay",
+      "register": "furious",
+      "composite": 0.9242,
+      "components": {
+        "coverage": 1.0,
+        "faithfulness": 0.95,
+        "action_correctness": 1.0,
+        "tone": 0.8,
+        "entity_accuracy": 0.6667
+      },
+      "gate_failures": [],
+      "fact_checks": [
+        {
+          "name": "order_number",
+          "verdict": "PASS",
+          "detail": "reply cites order 90676-6049101",
+          "severity": "major"
+        },
+        {
+          "name": "item_reference",
+          "verdict": "FAIL",
+          "detail": "reply never mentions the item 'Summit Midweight Hiking Boots'",
+          "severity": "minor"
+        },
+        {
+          "name": "express_fee",
+          "verdict": "PASS",
+          "detail": "express fee $9.99 correct",
+          "severity": "major"
+        }
+      ],
+      "claims": [
+        "policy claim",
+        "action claim"
+      ],
+      "verdicts": [
+        {
+          "claim": "policy claim",
+          "verdict": "SUPPORTED",
+          "why": "matches KB"
+        },
+        {
+          "claim": "action claim",
+          "verdict": "SUPPORTED",
+          "why": "correct action"
+        }
+      ],
+      "coverage_detail": [],
+      "reply_excerpt": "We are so sorry for the frustration regarding order 90676-6049101, and we completely understand your anger over the delay. We are currently experiencing a very high order volume, but your package is a"
+    },
+    {
+      "id": "refund_request-94931089",
+      "intent": "refund_request",
+      "register": "professional",
+      "composite": 0.9575,
+      "components": {
+        "coverage": 1.0,
+        "faithfulness": 0.95,
+        "action_correctness": 1.0,
+        "tone": 0.8,
+        "entity_accuracy": 1.0
+      },
+      "gate_failures": [],
+      "fact_checks": [
+        {
+          "name": "order_number",
+          "verdict": "PASS",
+          "detail": "reply cites order 56566-4514944",
+          "severity": "major"
+        },
+        {
+          "name": "price",
+          "verdict": "PASS",
+          "detail": "reply cites correct amount $39.50",
+          "severity": "major"
+        },
+        {
+          "name": "item_reference",
+          "verdict": "PASS",
+          "detail": "reply references the item 'Beacon 500 Battery Lantern'",
+          "severity": "major"
+        },
+        {
+          "name": "return_window",
+          "verdict": "PASS",
+          "detail": "reply states correct 30-day return window",
+          "severity": "major"
+        },
+        {
+          "name": "refund_eligibility",
+          "verdict": "PASS",
+          "detail": "reply proceeds with refund (eligible)",
+          "severity": "major"
+        }
+      ],
+      "claims": [
+        "policy claim",
+        "action claim"
+      ],
+      "verdicts": [
+        {
+          "claim": "policy claim",
+          "verdict": "SUPPORTED",
+          "why": "matches KB"
+        },
+        {
+          "claim": "action claim",
+          "verdict": "SUPPORTED",
+          "why": "correct action"
+        }
+      ],
+      "coverage_detail": [],
+      "reply_excerpt": "We have processed the return request for order 56566-4514944 regarding the Beacon 500 Battery Lantern. A full refund of $39.50 will be issued to your original payment method, with no restocking fee ap"
+    },
+    {
+      "id": "refund_request-47320424",
+      "intent": "refund_request",
+      "register": "frustrated",
+      "composite": 0.9575,
+      "components": {
+        "coverage": 1.0,
+        "faithfulness": 0.95,
+        "action_correctness": 1.0,
+        "tone": 0.8,
+        "entity_accuracy": 1.0
+      },
+      "gate_failures": [],
+      "fact_checks": [
+        {
+          "name": "order_number",
+          "verdict": "PASS",
+          "detail": "reply cites order 44718-3342608",
+          "severity": "major"
+        },
+        {
+          "name": "price",
+          "verdict": "PASS",
+          "detail": "reply cites correct amount $79.00",
+          "severity": "major"
+        },
+        {
+          "name": "item_reference",
+          "verdict": "PASS",
+          "detail": "reply references the item 'Beacon 500 Battery Lantern'",
+          "severity": "major"
+        },
+        {
+          "name": "refund_window",
+          "verdict": "PASS",
+          "detail": "reply states correct refund window 5–7 business days",
+          "severity": "major"
+        },
+        {
+          "name": "return_window",
+          "verdict": "PASS",
+          "detail": "reply states correct 30-day return window",
+          "severity": "major"
+        },
+        {
+          "name": "refund_eligibility",
+          "verdict": "PASS",
+          "detail": "reply proceeds with refund (eligible)",
+          "severity": "major"
+        }
+      ],
+      "claims": [
+        "policy claim",
+        "action claim"
+      ],
+      "verdicts": [
+        {
+          "claim": "policy claim",
+          "verdict": "SUPPORTED",
+          "why": "matches KB"
+        },
+        {
+          "claim": "action claim",
+          "verdict": "SUPPORTED",
+          "why": "correct action"
+        }
+      ],
+      "coverage_detail": [],
+      "reply_excerpt": "I apologize for the oversight on your previous inquiry regarding order 44718-3342608, and I understand your frustration at having to follow up a second time. \n\nYour Beacon 500 Battery Lantern is still"
+    },
+    {
+      "id": "refund_request-41628313",
+      "intent": "refund_request",
+      "register": "terse",
+      "composite": 0.9575,
+      "components": {
+        "coverage": 1.0,
+        "faithfulness": 0.95,
+        "action_correctness": 1.0,
+        "tone": 0.8,
+        "entity_accuracy": 1.0
+      },
+      "gate_failures": [],
+      "fact_checks": [
+        {
+          "name": "order_number",
+          "verdict": "PASS",
+          "detail": "reply cites order 42742-2264748",
+          "severity": "major"
+        },
+        {
+          "name": "price",
+          "verdict": "PASS",
+          "detail": "reply cites correct amount $169.00",
+          "severity": "major"
+        },
+        {
+          "name": "item_reference",
+          "verdict": "PASS",
+          "detail": "reply references the item 'Trailhead 65L Backpack'",
+          "severity": "major"
+        },
+        {
+          "name": "return_window",
+          "verdict": "PASS",
+          "detail": "reply states correct 30-day return window",
+          "severity": "major"
+        },
+        {
+          "name": "refund_eligibility",
+          "verdict": "PASS",
+          "detail": "reply proceeds with refund (eligible)",
+          "severity": "major"
+        }
+      ],
+      "claims": [
+        "policy claim",
+        "action claim"
+      ],
+      "verdicts": [
+        {
+          "claim": "policy claim",
+          "verdict": "SUPPORTED",
+          "why": "matches KB"
+        },
+        {
+          "claim": "action claim",
+          "verdict": "SUPPORTED",
+          "why": "correct action"
+        }
+      ],
+      "coverage_detail": [],
+      "reply_excerpt": "Your refund of $169.00 for the Trailhead 65L Backpack (order 42742-2264748) has been processed to your original payment method. It will appear in your account within 5–7 business days. \n\nAs only 8 day"
+    },
+    {
+      "id": "refund_request-25934724",
+      "intent": "refund_request",
+      "register": "calm",
+      "composite": 0.9575,
+      "components": {
+        "coverage": 1.0,
+        "faithfulness": 0.95,
+        "action_correctness": 1.0,
+        "tone": 0.8,
+        "entity_accuracy": 1.0
+      },
+      "gate_failures": [],
+      "fact_checks": [
+        {
+          "name": "order_number",
+          "verdict": "PASS",
+          "detail": "reply cites order 70217-9996414",
+          "severity": "major"
+        },
+        {
+          "name": "price",
+          "verdict": "PASS",
+          "detail": "reply cites correct amount $28.00",
+          "severity": "major"
+        },
+        {
+          "name": "item_reference",
+          "verdict": "PASS",
+          "detail": "reply references the item 'Trail Merino Crew Socks 3-Pack'",
+          "severity": "major"
+        },
+        {
+          "name": "return_window",
+          "verdict": "PASS",
+          "detail": "reply states correct 30-day return window",
+          "severity": "major"
+        },
+        {
+          "name": "refund_eligibility",
+          "verdict": "PASS",
+          "detail": "reply proceeds with refund (eligible)",
+          "severity": "major"
+        }
+      ],
+      "claims": [
+        "policy claim",
+        "action claim"
+      ],
+      "verdicts": [
+        {
+          "claim": "policy claim",
+          "verdict": "SUPPORTED",
+          "why": "matches KB"
+        },
+        {
+          "claim": "action claim",
+          "verdict": "SUPPORTED",
+          "why": "correct action"
+        }
+      ],
+      "coverage_detail": [],
+      "reply_excerpt": "Your refund of $28.00 for the Trail Merino Crew Socks 3-Pack (Order #70217-9996414) has been processed and will be returned to your original payment method. Please allow 5 to 7 business days for the f"
+    },
+    {
+      "id": "refund_request-12408191",
+      "intent": "refund_request",
+      "register": "terse",
+      "composite": 0.9575,
+      "components": {
+        "coverage": 1.0,
+        "faithfulness": 0.95,
+        "action_correctness": 1.0,
+        "tone": 0.8,
+        "entity_accuracy": 1.0
+      },
+      "gate_failures": [],
+      "fact_checks": [
+        {
+          "name": "order_number",
+          "verdict": "PASS",
+          "detail": "reply cites order 40512-2694522",
+          "severity": "major"
+        },
+        {
+          "name": "price",
+          "verdict": "PASS",
+          "detail": "reply cites correct amount $289.00",
+          "severity": "major"
+        },
+        {
+          "name": "item_reference",
+          "verdict": "PASS",
+          "detail": "reply references the item 'Alpine Trail 4-Person Tent'",
+          "severity": "major"
+        },
+        {
+          "name": "refund_window",
+          "verdict": "PASS",
+          "detail": "reply states correct refund window 5–7 business days",
+          "severity": "major"
+        },
+        {
+          "name": "return_window",
+          "verdict": "PASS",
+          "detail": "reply states correct 30-day return window",
+          "severity": "major"
+        },
+        {
+          "name": "refund_eligibility",
+          "verdict": "PASS",
+          "detail": "reply proceeds with refund (eligible)",
+          "severity": "major"
+        }
+      ],
+      "claims": [
+        "policy claim",
+        "action claim"
+      ],
+      "verdicts": [
+        {
+          "claim": "policy claim",
+          "verdict": "SUPPORTED",
+          "why": "matches KB"
+        },
+        {
+          "claim": "action claim",
+          "verdict": "SUPPORTED",
+          "why": "correct action"
+        }
+      ],
+      "coverage_detail": [],
+      "reply_excerpt": "Your return for order 40512-2694522 (Alpine Trail 4-Person Tent) is approved. Since it has been 2 days since delivery, it is well within the 30-day return window. \n\nA full refund of $289.00 will be is"
+    },
+    {
+      "id": "shipping_delay-72734644",
+      "intent": "shipping_delay",
+      "register": "professional",
+      "composite": 0.9242,
+      "components": {
+        "coverage": 1.0,
+        "faithfulness": 0.95,
+        "action_correctness": 1.0,
+        "tone": 0.8,
+        "entity_accuracy": 0.6667
+      },
+      "gate_failures": [],
+      "fact_checks": [
+        {
+          "name": "order_number",
+          "verdict": "PASS",
+          "detail": "reply cites order 44760-8633773",
+          "severity": "major"
+        },
+        {
+          "name": "item_reference",
+          "verdict": "FAIL",
+          "detail": "reply never mentions the item 'Trailhead 65L Backpack'",
+          "severity": "minor"
+        },
+        {
+          "name": "express_fee",
+          "verdict": "PASS",
+          "detail": "express fee $9.99 correct",
+          "severity": "major"
+        }
+      ],
+      "claims": [
+        "policy claim",
+        "action claim"
+      ],
+      "verdicts": [
+        {
+          "claim": "policy claim",
+          "verdict": "SUPPORTED",
+          "why": "matches KB"
+        },
+        {
+          "claim": "action claim",
+          "verdict": "SUPPORTED",
+          "why": "correct action"
+        }
+      ],
+      "coverage_detail": [],
+      "reply_excerpt": "Dear Valued Customer,\n\nThank you for contacting Northwind Supply Co. regarding order number 44760-8633773. We sincerely apologize for the delay and any disruption this may cause to your procurement pr"
+    },
+    {
+      "id": "defect_warranty-13910152",
+      "intent": "defect_warranty",
+      "register": "chatty",
+      "composite": 0.9325,
+      "components": {
+        "coverage": 1.0,
+        "faithfulness": 0.95,
+        "action_correctness": 1.0,
+        "tone": 0.8,
+        "entity_accuracy": 0.75
+      },
+      "gate_failures": [],
+      "fact_checks": [
+        {
+          "name": "order_number",
+          "verdict": "PASS",
+          "detail": "reply cites order 26728-9961107",
+          "severity": "major"
+        },
+        {
+          "name": "item_reference",
+          "verdict": "FAIL",
+          "detail": "reply never mentions the item 'Beacon 500 Battery Lantern'",
+          "severity": "minor"
+        },
+        {
+          "name": "warranty_duration",
+          "verdict": "PASS",
+          "detail": "reply states correct 24-month warranty",
+          "severity": "major"
+        },
+        {
+          "name": "warranty_decision",
+          "verdict": "PASS",
+          "detail": "reply correctly honors warranty",
+          "severity": "major"
+        }
+      ],
+      "claims": [
+        "policy claim",
+        "action claim"
+      ],
+      "verdicts": [
+        {
+          "claim": "policy claim",
+          "verdict": "SUPPORTED",
+          "why": "matches KB"
+        },
+        {
+          "claim": "action claim",
+          "verdict": "SUPPORTED",
+          "why": "correct action"
+        }
+      ],
+      "coverage_detail": [],
+      "reply_excerpt": "Hello! I am so sorry to hear about your zipper—I actually had my favorite winter jacket go through the exact same thing on a chilly hike last weekend, so I totally feel your pain! \n\nThe great news is "
+    },
+    {
+      "id": "refund_request-68967416",
+      "intent": "refund_request",
+      "register": "frustrated",
+      "composite": 0.9575,
+      "components": {
+        "coverage": 1.0,
+        "faithfulness": 0.95,
+        "action_correctness": 1.0,
+        "tone": 0.8,
+        "entity_accuracy": 1.0
+      },
+      "gate_failures": [],
+      "fact_checks": [
+        {
+          "name": "order_number",
+          "verdict": "PASS",
+          "detail": "reply cites order 25860-5159166",
+          "severity": "major"
+        },
+        {
+          "name": "price",
+          "verdict": "PASS",
+          "detail": "reply cites correct amount $178.00",
+          "severity": "major"
+        },
+        {
+          "name": "item_reference",
+          "verdict": "PASS",
+          "detail": "reply references the item 'Featherlight Camp Chair'",
+          "severity": "major"
+        },
+        {
+          "name": "return_window",
+          "verdict": "PASS",
+          "detail": "reply states correct 30-day return window",
+          "severity": "major"
+        },
+        {
+          "name": "refund_eligibility",
+          "verdict": "PASS",
+          "detail": "reply proceeds with refund (eligible)",
+          "severity": "major"
+        }
+      ],
+      "claims": [
+        "policy claim",
+        "action claim"
+      ],
+      "verdicts": [
+        {
+          "claim": "policy claim",
+          "verdict": "SUPPORTED",
+          "why": "matches KB"
+        },
+        {
+          "claim": "action claim",
+          "verdict": "SUPPORTED",
+          "why": "correct action"
+        }
+      ],
+      "coverage_detail": [],
+      "reply_excerpt": "We sincerely apologize for missing your initial request regarding order 25860-5159166. It is frustrating to have to ask twice, and we regret the oversight. \n\nYour Featherlight Camp Chair is fully elig"
+    },
+    {
+      "id": "shipping_delay-15958429",
+      "intent": "shipping_delay",
+      "register": "grateful",
+      "composite": 0.9242,
+      "components": {
+        "coverage": 1.0,
+        "faithfulness": 0.95,
+        "action_correctness": 1.0,
+        "tone": 0.8,
+        "entity_accuracy": 0.6667
+      },
+      "gate_failures": [],
+      "fact_checks": [
+        {
+          "name": "order_number",
+          "verdict": "PASS",
+          "detail": "reply cites order 64040-1415846",
+          "severity": "major"
+        },
+        {
+          "name": "item_reference",
+          "verdict": "FAIL",
+          "detail": "reply never mentions the item 'Summit Midweight Hiking Boots'",
+          "severity": "minor"
+        },
+        {
+          "name": "express_fee",
+          "verdict": "PASS",
+          "detail": "express fee $9.99 correct",
+          "severity": "major"
+        }
+      ],
+      "claims": [
+        "policy claim",
+        "action claim"
+      ],
+      "verdicts": [
+        {
+          "claim": "policy claim",
+          "verdict": "SUPPORTED",
+          "why": "matches KB"
+        },
+        {
+          "claim": "action claim",
+          "verdict": "SUPPORTED",
+          "why": "correct action"
+        }
+      ],
+      "coverage_detail": [],
+      "reply_excerpt": "Thank you so much for your previous help and patience with us! Regarding order 64040-1415846, we sincerely apologize for the delay. Your package is currently experiencing a carrier backlog while in tr"
+    },
+    {
+      "id": "shipping_delay-24376248",
+      "intent": "shipping_delay",
+      "register": "frustrated",
+      "composite": 0.9242,
+      "components": {
+        "coverage": 1.0,
+        "faithfulness": 0.95,
+        "action_correctness": 1.0,
+        "tone": 0.8,
+        "entity_accuracy": 0.6667
+      },
+      "gate_failures": [],
+      "fact_checks": [
+        {
+          "name": "order_number",
+          "verdict": "PASS",
+          "detail": "reply cites order 84085-9770838",
+          "severity": "major"
+        },
+        {
+          "name": "item_reference",
+          "verdict": "FAIL",
+          "detail": "reply never mentions the item 'Trail Merino Crew Socks 3-Pack'",
+          "severity": "minor"
+        },
+        {
+          "name": "express_fee",
+          "verdict": "PASS",
+          "detail": "express fee $9.99 correct",
+          "severity": "major"
+        }
+      ],
+      "claims": [
+        "policy claim",
+        "action claim"
+      ],
+      "verdicts": [
+        {
+          "claim": "policy claim",
+          "verdict": "SUPPORTED",
+          "why": "matches KB"
+        },
+        {
+          "claim": "action claim",
+          "verdict": "SUPPORTED",
+          "why": "correct action"
+        }
+      ],
+      "coverage_detail": [],
+      "reply_excerpt": "Dear Customer,\n\nWe sincerely apologize for the delay regarding order 84085-9770838, and we completely understand your frustration—especially since this is the second time you have had to reach out to "
+    }
+  ]
+}
