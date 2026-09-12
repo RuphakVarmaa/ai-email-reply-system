@@ -30,3 +30,4 @@ data/cache/
 .env
 *.key
 data/build.log
+data/raw/

@@ -1,8 +1,8 @@
-"""Unit tests for the email reply system.
+"""Unit tests for the AppleSupport AI agent system.
 
-Designed to run WITHOUT API calls (mock LLM backend) so they pass in CI.
+Designed to run WITHOUT API calls — tests the keyword classifier,
+escalation rules, retriever, evaluator, and text metrics.
 """
-import asyncio
 import json
 import sys
 from pathlib import Path
@@ -10,223 +10,180 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 import pytest
-import pytest_asyncio
 
-from email_reply.dataset.synth import build_scenarios, load_kb, ScenarioBuilder, REGISTERS
-from email_reply.llm import LLM, MockLLM, extract_json
-from email_reply.eval.facts import (
-    run_fact_checks, check_entity_survival, check_policy_numbers,
-    check_eligibility_consistency, check_gates,
+from email_reply.agent import (
+    classify_intent_keyword, should_escalate_rules, INTENTS,
+    SimpleRetriever, generate_reply_template, generate_reply_nn,
 )
-from email_reply.eval.composite import score_response, overall_scores, tone_norm, WEIGHTS
-from email_reply.eval.validate import spearman, pearson, PERTURBATIONS
+from email_reply.evaluate import (
+    rouge_l, length_appropriateness, keyword_overlap,
+    intent_metrics, escalation_metrics,
+)
 
 
-# ---------------------------------------------------------------- fixtures
+# ---------------------------------------------------------------- intent tests
 
-@pytest.fixture
-def kb():
-    return load_kb()
-
-
-@pytest.fixture
-def sample_scenario(kb):
-    import random
-    sb = ScenarioBuilder(kb, random.Random(42))
-    return sb.refund_request()
+def test_intent_battery():
+    intent, conf = classify_intent_keyword("My iPhone battery drains so fast after update")
+    assert intent == "battery_power"
+    assert conf > 0
 
 
-@pytest.fixture
-def good_reply():
-    return (
-        "Hi Maya, thanks for reaching out about order 39256-3341057. "
-        "We're happy to help with your return of the Ridgeline -20°C Sleeping Bag ($199.00). "
-        "Since it's been 4 days since delivery, you're well within our 30-day return window. "
-        "We'll process your refund of $199.00 to your original payment method, and it should "
-        "appear within 5–7 business days after we receive the item back. Please note that "
-        "return shipping is on you (no restocking fee, though!). "
-        "Let us know if you need a return label. — The Northwind Team"
-    )
+def test_intent_update():
+    intent, _ = classify_intent_keyword("How do I update to iOS 11.1?")
+    assert intent == "software_update"
 
 
-@pytest.fixture
-def bad_reply():
-    return (
-        "Per our company policy, all requests are handled in order received. "
-        "Your refund of $199.00 for order 99999-0000000 will arrive in 30 business days. "
-        "As an AI, I cannot guarantee timelines. — The Northwind Team"
-    )
+def test_intent_connectivity():
+    intent, _ = classify_intent_keyword("WiFi keeps disconnecting on my MacBook")
+    assert intent == "connectivity"
 
 
-# ---------------------------------------------------------------- dataset tests
-
-def test_scenario_builder_produces_all_intents(kb):
-    scenarios = build_scenarios(seed=1, n_per_intent=2, kb=kb)
-    intents = {s.intent for s in scenarios}
-    assert len(intents) >= 10, f"Expected >=10 intents, got {len(intents)}: {intents}"
+def test_intent_account():
+    intent, _ = classify_intent_keyword("I can't sign in to my Apple ID")
+    assert intent == "account_icloud"
 
 
-def test_scenario_facts_have_required_keys(kb):
-    import random
-    sb = ScenarioBuilder(kb, random.Random(7))
-    sc = sb.refund_request()
-    assert "order_number" in sc.facts
-    assert "price_usd" in sc.facts
-    assert "return_window_days" in sc.facts
+def test_intent_hardware():
+    intent, _ = classify_intent_keyword("My screen is cracked, is this covered under warranty?")
+    assert intent == "hardware"
 
 
-def test_scenario_reproducibility(kb):
-    s1 = build_scenarios(seed=42, n_per_intent=3, kb=kb)
-    s2 = build_scenarios(seed=42, n_per_intent=3, kb=kb)
-    for a, b in zip(s1, s2):
-        assert a.intent == b.intent
-        assert a.customer == b.customer
-        assert a.facts == b.facts
+def test_intent_unknown():
+    intent, conf = classify_intent_keyword("Hello there")
+    assert intent == "general_inquiry"
+    assert conf <= 0.5
 
 
-def test_all_registers_used(kb):
-    scenarios = build_scenarios(seed=0, n_per_intent=20, kb=kb)
-    regs = {s.register for s in scenarios}
-    assert regs == set(REGISTERS.keys())
+def test_all_intents_have_keywords():
+    from email_reply.agent import INTENT_KEYWORDS
+    for intent in INTENTS:
+        assert intent in INTENT_KEYWORDS, f"Missing keywords for {intent}"
+        assert len(INTENT_KEYWORDS[intent]) >= 3
 
 
-# ---------------------------------------------------------------- LLM mock tests
+# ---------------------------------------------------------------- escalation tests
 
-@pytest.mark.asyncio
-async def test_mock_llm_text():
-    mock = MockLLM()
-    text = await mock.generate("test", "say hello")
-    assert "mock" in text.lower() or "northwind" in text.lower()
-
-
-@pytest.mark.asyncio
-async def test_mock_llm_json():
-    mock = MockLLM()
-    text = await mock.generate("test", 'extract claims from reply', json_mode=True)
-    d = json.loads(text)
-    assert isinstance(d, dict)
+def test_escalate_hardware():
+    esc, reason = should_escalate_rules("My screen is cracked", "hardware")
+    assert esc is True
+    assert "hardware" in reason.lower() or "physical" in reason.lower()
 
 
-def test_extract_json_plain():
-    assert extract_json('{"a":1}') == {"a": 1}
+def test_escalate_angry():
+    esc, reason = should_escalate_rules("This is the worst service, total scam!", "general_inquiry")
+    assert esc is True
 
 
-def test_extract_json_fenced():
-    text = "```json\n{\"a\": 1}\n```"
-    assert extract_json(text) == {"a": 1}
+def test_escalate_billing():
+    esc, reason = should_escalate_rules("I need a refund for this purchase", "app_issue")
+    assert esc is True
+    assert "billing" in reason.lower() or "financial" in reason.lower()
 
 
-def test_extract_json_surrounded():
-    text = "Here is the JSON: {\"b\": 2} and more text"
-    assert extract_json(text) == {"b": 2}
+def test_no_escalate_simple():
+    esc, _ = should_escalate_rules("How do I update my iPhone?", "software_update")
+    assert esc is False
 
 
-# ---------------------------------------------------------------- fact check tests
-
-def test_entity_survival_pass(kb, good_reply):
-    facts = {"order_number": "39256-3341057", "price_usd": 199.00, "item": "Ridgeline -20°C Sleeping Bag"}
-    checks = check_entity_survival(good_reply, facts)
-    verdicts = {c.name: c.verdict for c in checks}
-    assert verdicts.get("order_number") == "PASS"
-    assert verdicts.get("price") == "PASS"
-    assert verdicts.get("item_reference") == "PASS"
+def test_escalate_repeated_failure():
+    esc, _ = should_escalate_rules("I already tried restarting, nothing works!", "performance")
+    assert esc is True
 
 
-def test_entity_survival_wrong_order(kb, bad_reply):
-    facts = {"order_number": "39256-3341057", "price_usd": 199.00, "item": "Ridgeline -20°C Sleeping Bag"}
-    checks = check_entity_survival(bad_reply, facts)
-    verdicts = {c.name: c.verdict for c in checks}
-    assert verdicts.get("order_number") == "FAIL"
+# ---------------------------------------------------------------- template reply tests
+
+def test_template_reply_exists_for_all_intents():
+    for intent in INTENTS:
+        reply = generate_reply_template(intent)
+        assert len(reply) > 20, f"Template for {intent} is too short"
+        assert len(reply) < 600, f"Template for {intent} is too long"
 
 
-def test_policy_refund_window(kb):
-    reply = "Your refund will appear within 5–7 business days after processing."
-    facts = {"refund_window_text": "5–7 business days"}
-    checks = check_policy_numbers(reply, facts, kb)
-    verdicts = {c.name: c.verdict for c in checks}
-    assert verdicts.get("refund_window") == "PASS"
+def test_nn_reply_fallback():
+    reply = generate_reply_nn([])
+    assert len(reply) > 10
 
 
-def test_policy_wrong_refund_window(kb):
-    reply = "Your refund will appear within 3–4 business days."
-    facts = {"refund_window_text": "5–7 business days"}
-    checks = check_policy_numbers(reply, facts, kb)
-    has_fail = any(c.verdict == "FAIL" for c in checks if c.name == "refund_window")
-    assert has_fail, f"Expected refund_window FAIL but got: {[(c.name, c.verdict) for c in checks]}"
+def test_nn_reply_returns_first():
+    examples = [{"brand_text": "Try restarting your device.", "customer_text": "help"}]
+    reply = generate_reply_nn(examples)
+    assert reply == "Try restarting your device."
 
 
-def test_eligibility_warranty_void(kb):
-    reply = "We'll ship you a free replacement immediately."
-    facts = {"in_warranty": False}
-    checks = check_eligibility_consistency(reply, facts)
-    has_fail = any(c.verdict == "FAIL" for c in checks)
-    assert has_fail
+# ---------------------------------------------------------------- retriever tests
+
+def test_retriever_basic():
+    pairs = [
+        {"customer_text": "My iPhone battery drains fast", "brand_text": "Try checking battery usage in Settings."},
+        {"customer_text": "WiFi not connecting", "brand_text": "Try toggling WiFi off and on."},
+        {"customer_text": "Can't update iOS", "brand_text": "Go to Settings > General > Software Update."},
+    ]
+    ret = SimpleRetriever(pairs)
+    results = ret.search("battery dying quickly", k=2)
+    assert len(results) == 2
+    assert "battery" in results[0]["customer_text"].lower()
 
 
-def test_eligibility_warranty_valid(kb):
-    reply = "Good news — your 24-month warranty covers this issue. Please send a photo."
-    facts = {"in_warranty": True}
-    checks = check_eligibility_consistency(reply, facts)
-    verdicts = [c.verdict for c in checks]
-    assert "FAIL" not in verdicts
+def test_retriever_empty_query():
+    pairs = [{"customer_text": "test", "brand_text": "reply"}]
+    ret = SimpleRetriever(pairs)
+    results = ret.search("", k=1)
+    assert len(results) == 1
 
 
-def test_gates_forbidden_phrase(kb):
-    reply = "As an AI, I cannot help you. — The Northwind Team"
-    checks = check_gates(reply, kb)
-    has_forbidden = any(c.name == "forbidden_phrase" and c.verdict == "FAIL" for c in checks)
-    has_prompt = any(c.name == "prompt_leak" and c.verdict == "FAIL" for c in checks)
-    assert has_forbidden or has_prompt
+# ---------------------------------------------------------------- evaluation metric tests
+
+def test_rouge_l_identical():
+    assert abs(rouge_l("hello world", "hello world") - 1.0) < 0.01
 
 
-def test_gates_missing_signature(kb):
-    reply = "We'll process your return right away. Thanks!"
-    checks = check_gates(reply, kb)
-    has_sig = any(c.name == "signature" and c.verdict == "FAIL" for c in checks)
-    assert has_sig
+def test_rouge_l_no_overlap():
+    assert rouge_l("hello world", "foo bar") == 0.0
 
 
-# ---------------------------------------------------------------- composite tests
-
-def test_tone_norm():
-    assert tone_norm(1) == 0.0
-    assert tone_norm(5) == 1.0
-    assert 0.6 < tone_norm(4) < 0.9
+def test_rouge_l_partial():
+    score = rouge_l("the cat sat on the mat", "the cat on the mat")
+    assert 0.5 < score < 1.0
 
 
-def test_weights_sum_to_one():
-    total = sum(WEIGHTS.values())
-    assert abs(total - 1.0) < 0.001, f"Weights sum to {total}, expected 1.0"
+def test_length_short():
+    assert length_appropriateness("Short reply") == 1.0
 
 
-# ---------------------------------------------------------------- validate module tests
-
-def test_spearman_perfect():
-    x = [1, 2, 3, 4, 5]
-    y = [10, 20, 30, 40, 50]
-    assert abs(spearman(x, y) - 1.0) < 0.001
+def test_length_long():
+    assert length_appropriateness("x" * 900) < 0.5
 
 
-def test_spearman_inverse():
-    x = [1, 2, 3, 4, 5]
-    y = [50, 40, 30, 20, 10]
-    assert abs(spearman(x, y) + 1.0) < 0.001
+def test_keyword_overlap_full():
+    assert keyword_overlap("battery drain iphone", "your iphone battery drain is normal") > 0.5
 
 
-def test_pearson_perfect():
-    x = [1.0, 2.0, 3.0]
-    y = [2.0, 4.0, 6.0]
-    assert abs(pearson(x, y) - 1.0) < 0.001
+def test_keyword_overlap_none():
+    assert keyword_overlap("battery drain", "hello world") == 0.0
 
 
-def test_perturbations_all_modify():
-    """Each perturbation function actually changes the reply."""
-    import yaml
-    kb = yaml.safe_load((Path(__file__).parents[1] / "data" / "knowledge_base.yaml").read_text())
-    reply = ("Hi! We've approved the refund for order 12345-6789012 ($199.00). "
-             "Expect it within 5–7 business days. — The Northwind Team")
-    facts = {"order_number": "12345-6789012", "price_usd": 199.0,
-             "in_warranty": False, "adjustment_approved": False, "already_shipped": True}
-    for p in PERTURBATIONS:
-        corrupted = p.fn(reply, facts, kb)
-        assert corrupted != reply, f"Perturbation {p.id} ({p.name}) didn't change the reply"
+def test_intent_metrics_perfect():
+    preds = ["a", "b", "a"]
+    labels = ["a", "b", "a"]
+    m = intent_metrics(preds, labels)
+    assert m["accuracy"] == 1.0
+
+
+def test_intent_metrics_half():
+    preds = ["a", "b"]
+    labels = ["a", "a"]
+    m = intent_metrics(preds, labels)
+    assert m["accuracy"] == 0.5
+
+
+def test_escalation_metrics():
+    preds = [True, True, False, False]
+    labels = [True, False, True, False]
+    m = escalation_metrics(preds, labels)
+    assert m["tp"] == 1
+    assert m["fp"] == 1
+    assert m["fn"] == 1
+    assert m["tn"] == 1
+    assert m["precision"] == 0.5
+    assert m["recall"] == 0.5

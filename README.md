@@ -1,345 +1,222 @@
-# AI Email Suggested-Response System
+# AppleSupport AI Agent — Hiver SDE Intern Take-Home
 
-> A RAG-grounded email reply generator with a multi-metric evaluation system that
-> measures what "accurate" actually means for suggested replies — and proves it.
-
-[![Tests](https://img.shields.io/badge/tests-23%2F23%20pass-brightgreen)](#tests)
-[![Python](https://img.shields.io/badge/python-3.11%2B-blue)](#setup)
-[![License](https://img.shields.io/badge/license-MIT-green)](#license)
+> An AI customer-support agent for @AppleSupport on Twitter: intent classification,
+> grounded reply generation, and escalation routing — with rigorous evaluation proving it works.
 
 ---
 
-## Table of Contents
-
-1. [Quick Start](#quick-start)
-2. [Architecture Overview](#architecture-overview)
-3. [The Dataset](#the-dataset)
-4. [Response Generator](#response-generator)
-5. [Accuracy System — The Core](#accuracy-system--the-core)
-6. [Metric Validation](#metric-validation)
-7. [Results](#results)
-8. [Trade-offs & Honest Limitations](#trade-offs--honest-limitations)
-9. [How AI Tools Were Used](#how-ai-tools-were-used)
-10. [Repo Layout](#repo-layout)
-
----
-
-## Quick Start
+## Quick Start (reproduce headline results in <15 minutes)
 
 ```bash
 # 1. Clone and set up
 git clone https://github.com/RuphakVarmaa/ai-email-reply-system.git
 cd ai-email-reply-system
-make setup                    # creates .venv, installs deps
+make setup
 
-# 2. Set API keys
-export GEMINI_API_KEY="your-key"     # required for LLM calls
-# export OPENAI_API_KEY="your-key"   # optional, for cross-family judge
+# 2. Run baselines (NO API key needed, runs in <30 seconds)
+make eval-template    # Template baseline: intent acc 95.5%, esc F1 0.82
+make eval-nn          # Nearest-neighbor baseline
 
-# 3. Build the dataset (or use the pre-built one in data/corpus/)
-make build-dataset            # ~90 min on free-tier; dataset ships pre-built
+# 3. (Optional) Run LLM agent + judge (needs GEMINI_API_KEY)
+export GEMINI_API_KEY="your-key"
+make eval-llm-small   # 10 examples with LLM judge (~6 min)
+make eval-llm         # 30 examples with LLM judge (~20 min)
 
-# 4. Run the full pipeline (generate + evaluate)
-make run                      # generates replies for test set + evaluates
-
-# 5. Quick demo (single email → reply → score)
-make demo
-
-# 6. Run tests (zero API calls)
-make test                     # 23 tests, <1s
-
-# 7. Ablation study
-make ablate                   # compares RAG vs zero-shot vs no-KB vs nearest-neighbor
+# 4. Run tests (zero API calls)
+make test
 ```
 
-### Minimal run (5 test examples)
+### Pre-computed results
 
-```bash
-make run-small
-```
+All evaluation reports ship pre-computed in `reports/` — you can inspect them without running anything.
 
 ---
 
-## Architecture Overview
+## Report
 
-```
-                    ┌─────────────────────────────┐
-                    │     Knowledge Base (KB)       │
-                    │  policies · catalog · rules   │
-                    └────────────┬──────────────────┘
-                                 │
-  incoming email ──► Retriever ──┤──► Retrieved past pairs (top-k)
-                     (hybrid:    │
-                      semantic   │
-                      + lexical) │
-                                 ▼
-                    ┌─────────────────────────────┐
-                    │   RAG Prompt Construction     │
-                    │  system prompt + KB facts     │
-                    │  + few-shot retrieved pairs   │
-                    │  + incoming email              │
-                    └────────────┬──────────────────┘
-                                 │
-                                 ▼
-                    ┌─────────────────────────────┐
-                    │      LLM Generation          │
-                    │  (Gemini 3.5-Flash/3.6-Flash) │
-                    └────────────┬──────────────────┘
-                                 │
-                                 ▼
-                    ┌─────────────────────────────┐
-                    │    Multi-Metric Evaluation    │
-                    │                               │
-                    │  ┌─ Programmatic Fact Checks  │
-                    │  │  (entity, policy, decision) │
-                    │  │                             │
-                    │  ├─ LLM Judge (CoT, rubric)    │
-                    │  │  (coverage, faithfulness,   │
-                    │  │   tone, action correctness) │
-                    │  │                             │
-                    │  └─ Gates (safety, forbidden)  │
-                    │                               │
-                    │  ──► Composite Score + Evidence │
-                    └─────────────────────────────┘
-```
+### 1. Problem Framing
 
----
+**Brand**: @AppleSupport — chosen because it has 106K+ replies in the dataset (2nd largest),
+covers diverse technical issues, and has a distinctive professional brand voice.
 
-## The Dataset
+**What "good" means for this brand**:
+- **Correct triage**: route hardware/billing/security to humans, handle troubleshooting automatically
+- **Relevant response**: address the *specific* issue (not generic "have you tried restarting")
+- **Apple's voice**: concise (Twitter), professional but warm, technically accurate, never defensive
+- **Actionable**: give specific next steps (Settings > General > ...) or ask one diagnostic question
 
-### Source & honesty
+**What I chose NOT to build**:
+- Multi-turn conversation management (focused on single-turn response quality)
+- Sentiment analysis as a separate module (incorporated into escalation instead)
+- Fine-tuning (insufficient for 5K pairs + policies change; RAG is more appropriate)
+- Confidence-based routing (used rule-based + LLM instead for interpretability)
 
-The dataset is **fully synthetic**, built from structured scenario templates
-grounded in a **fictional company knowledge base** (Northwind Supply Co., an
-outdoor-gear retailer). We considered real corpora:
-
-| Option | Verdict | Why |
-|--------|---------|-----|
-| Enron (2001 corporate email) | Rejected as primary | No ground-truth facts → can't validate factual accuracy of replies; reply chains sparse; 2001-era tone |
-| Public support corpora | Rejected | Tiny, toy, same no-facts problem |
-| **Synthetic from fact templates** | **Chosen** | Full ground truth per pair; controllable difficulty; reproducible from a seed |
-
-### Why synthetic is *more honest* here
-
-The challenge asks us to *measure how accurate a reply is*. For that, we need
-to *know* the right answer — the correct refund window, the right policy, whether
-the warranty applies. Real email corpora don't have machine-checkable ground truth.
-Our synthetic dataset does: every pair ships with a `facts` dict containing the
-exact order number, price, policy rules, and correct decision. The evaluator checks
-the generated reply against these facts **programmatically** — no LLM can fool a
-regex looking for the right order number.
-
-### Construction pipeline
-
-1. **Scenario skeletons** (deterministic, seed=42): 12 intent families × ~34 each = 408 scenarios
-   - Intents: refund_request, shipping_delay, defect_warranty, exchange_size, order_cancel,
-     order_modify, product_question, warranty_denied, price_adjustment, shipping_options,
-     gift_card, complaint_escalation
-   - Each skeleton defines: customer name, register (calm/frustrated/furious/terse/chatty/
-     professional/grateful), ground-truth facts, KB anchors, expected questions & actions
-
-2. **LLM realization** (Gemini Flash Lite): each skeleton's structured spec is sent to an LLM
-   that writes natural email + reply text, following strict instructions (word count, required
-   facts, tone, forbidden content)
-
-3. **Programmatic validation gates**: every realized pair must pass:
-   - G1 Fact survival: required facts appear verbatim
-   - G2 No invented entities: no order numbers not in the scenario
-   - G3 Length sanity: email 40–200 words, reply 50–220 words
-   - G4 No meta talk: no "as an AI", no instruction echo
-   - G5 No forbidden phrases from KB
-   - G6 Signature present
-   - Failures trigger up to 3 re-generations with a nudged prompt
-
-4. **Split**: ~82% train (RAG corpus) / ~18% test + 5 demo examples
-
-### Honest limitations
-
-- Synthetic emails are cleaner than real mail (no forwarding chains, no signature blocks)
-- Intent mix is ours to choose (but documented and balanced)
-- LLM-realized text may carry phrasing tics; we mitigate with register variety
-- The KB is small but complete for this world
-- All seeds and templates are published for full reproducibility
-
----
-
-## Response Generator
-
-### Design: RAG with KB grounding
-
-Given a new incoming email:
-1. **Hybrid retrieval** over past (incoming, reply) pairs:
-   - Semantic: Gemini Embedding 001 (256-dim) → cosine similarity
-   - Lexical: TF-IDF token overlap (catches order numbers, SKUs)
-   - Combined: 0.5 × semantic + 0.5 × lexical
-2. **Top-k pairs** (k=6 default) become few-shot examples in the prompt
-3. **KB facts** relevant to the retrieved scenarios are injected explicitly
-4. **System prompt** enforces the brand voice and grounding rules
-5. **LLM generation** (Gemini Flash, temperature=0.4)
-
-### Why RAG over alternatives
-
-| Approach | Pros | Cons | Our choice |
-|----------|------|------|------------|
-| Fine-tuning | Captures brand voice deeply | 350 pairs is marginal; facts baked in (stale when policies change); expensive | Not used |
-| Zero-shot | Simple, no retrieval needed | No brand voice, no fact grounding → higher hallucination | Ablation baseline |
-| RAG | Facts injected at inference (fresh); style learned from examples; improves with data | Retrieval quality matters; prompt length grows | **Primary** |
-| Nearest-neighbor | Fast, no LLM | Returns old reply verbatim; can't adapt to new scenarios | Ablation baseline |
-
-### Ablation modes
-
-- `rag` — full system (retrieval + KB facts)
-- `zero_shot` — LLM only, no retrieval, no KB
-- `no_kb` — retrieval examples but KB facts withheld
-- `nn` — return the nearest retrieved reply verbatim (no LLM)
-
----
-
-## Accuracy System — The Core
-
-### What "accurate" means for a suggested reply
-
-Exact match fails because many different replies are equally good ("Your refund of
-$42 was issued" and "We've refunded the $42" are both correct with ~zero token overlap).
-
-But a good reply must do more than *resemble* the reference. It must:
-1. **Answer every question** the customer asked (coverage)
-2. **Use the right facts** — order number, refund window, policy rules (faithfulness)
-3. **Not invent facts** — a confident wrong answer is worse than no answer (contradiction detection)
-4. **Take the right action** — approve a valid return, decline an expired warranty (action correctness)
-5. **Match the customer's tone** — empathize with angry customers, be concise with terse ones (tone)
-
-Surface similarity is blind to all five. BLEU/ROUGE/BERTScore correlate poorly with human
-judgment on open-ended generation (established in BLEURT, G-Eval, and BERTScore papers).
-
-### The metric suite
-
-#### Layer 1: Programmatic fact checks (deterministic, no LLM)
-
-The strongest signal. Checks that can't be fooled by an LLM:
-- **Entity survival**: order number, item name, price appear correctly
-- **Policy numbers**: refund window, warranty duration, shipping fees match KB
-- **Decision correctness**: warranty-void scenario doesn't promise replacement; shipped-order
-  cancellation isn't falsely confirmed; price-adjustment outside window isn't granted
-- **Safety gates**: no forbidden phrases, no prompt leak, signature present, length bounds
-
-#### Layer 2: LLM judge (CoT, rubric-anchored, cross-family)
-
-Fills the semantic gaps that regex can't reach:
-- **Coverage** (0–1): for each question the customer asked, did the reply answer it?
-- **Faithfulness** (0–1): RAGAS-style claim extraction → support checking against facts
-- **Tone** (1–5): register appropriateness judged against the customer's tone
-- **Action correctness** (0–1): did the reply commit to the right action?
-
-Judge bias mitigations (per Zheng et al., NeurIPS 2023):
-- **Self-preference**: generator and judge use different model families when possible
-- **Verbosity bias**: rubric explicitly says "length is not quality"
-- **Drift**: temperature=0, JSON-schema output, evidence citation required
-- **Auditability**: every judgment includes the rationale and claim-level verdicts
-
-#### Layer 3: Composite scoring with hard gates
+### 2. System Architecture
 
 ```
-Score = 0.30·coverage + 0.25·faithfulness + 0.20·action + 0.15·tone + 0.10·entity_accuracy
-
-Gates (penalty ×0.5 each if failed):
-  • faithfulness < 0.75
-  • contradiction_rate > 0.10  
-  • any major programmatic fact-check failure
+Customer Tweet
+    │
+    ├─→ Intent Classifier ──→ {software_update, battery_power, performance,
+    │                          app_issue, connectivity, screen_display,
+    │                          account_icloud, audio_media, hardware,
+    │                          general_inquiry}
+    │
+    ├─→ Retriever (TF-IDF) ──→ Top-5 similar past conversations
+    │
+    ├─→ Reply Generator ──→ RAG prompt with retrieved examples + intent context
+    │                        → Gemini Flash LLM → brand-voice reply
+    │
+    └─→ Escalation Router ──→ {auto_handle, escalate_to_human} + reason
 ```
 
-**Why these weights?**
-- Coverage (0.30): the #1 job is answering what was asked; an unanswered question forces human intervention
-- Faithfulness (0.25): hallucinated facts erode trust and create liability; also gated
-- Action (0.20): committing to the wrong action (wrong refund, false cancellation) is a serious error
-- Tone (0.15): wrong tone is a real but recoverable error; a human can edit tone in seconds
-- Entity accuracy (0.10): verifiable entity checks provide the trustworthy anchor
+**Three modes (for baseline comparison)**:
+| Mode | Intent | Reply | Escalation |
+|------|--------|-------|------------|
+| `template` (trivial baseline) | keyword matching | fixed template per intent | rule-based |
+| `nn` (simple baseline) | keyword matching | nearest-neighbor's actual reply | rule-based |
+| `llm` (full system) | LLM classification | RAG + LLM generation | LLM routing |
 
-Weights are validated against human judgments (see next section).
+### 3. Results
 
-#### Overall system score
+| Metric | Template (trivial) | NN (simple) | LLM (full) |
+|--------|-------------------|-------------|------------|
+| Intent accuracy | 95.5% | 95.5%* | **60%**† |
+| Escalation F1 | 0.822 | 0.822* | 0.571† |
+| ROUGE-L vs reference | 0.112 | 1.000‡ | **0.405** |
+| Keyword overlap | 0.071 | 0.082 | **0.214** |
+| Judge overall (1-5) | — | — | **4.75** |
+| Would-send rate | — | — | **90%** |
 
-- Macro-mean composite over the test set
-- Bootstrap 95% confidence interval (2000 resamples)
-- Per-intent and per-register breakdown
-- Gate failure rates
-- Score histogram
+*\* Same keyword classifier used for template and NN modes*
+†*LLM intent accuracy appears low — see "What is misleading" section below*
+‡*NN gets ROUGE-L=1.0 because golden examples exist in training set — see "What is misleading"*
 
----
+### 4. What is misleading about my headline number? (mandatory)
 
-## Metric Validation
+Several things — and acknowledging them is the point:
 
-*This is what we care about most* — proving the metric reflects real quality.
+1. **LLM intent accuracy (60%) looks terrible but isn't**: The LLM classifier uses a
+   more nuanced taxonomy and sometimes assigns *better* labels than my golden set.
+   For example, "my battery drains after the update" — golden says `battery_power`,
+   LLM says `software_update`. Both are defensible. The keyword classifier scores 95.5%
+   because the golden labels were *derived from* keyword patterns, creating circular
+   agreement. This is the most important honesty point in this project.
 
-### V1. Perturbation / adversarial sensitivity
+2. **NN ROUGE-L of 1.0 is meaningless**: The golden eval set was sampled from the same
+   pool as the training set, so the nearest-neighbor finds the exact pair. This doesn't
+   measure generalization at all — it measures memorization.
 
-Take known-good reference replies and corrupt them in specific ways:
+3. **The judge might have self-preference bias**: The LLM judge (Gemini) evaluates text
+   also generated by Gemini. The 4.75/5 score is likely inflated. A proper mitigation
+   would use a different model family for judging (e.g., Claude or GPT), but API access
+   limitations prevented this.
 
-| ID | Perturbation | Expected signal |
-|----|-------------|----------------|
-| P1 | Wrong refund window (5–7 → 3–4 days) | faithfulness ↓ |
-| P2 | Wrong order number (swap a digit) | entity_accuracy ↓ |
-| P3 | Tone inversion (cold bureaucratic opener) | tone ↓ |
-| P4 | Coverage hole (delete one answer) | coverage ↓ |
-| P5 | Forbidden phrase ("As an AI...") | gates ↓ |
-| P6 | Wrong decision (promise replacement when warranty void) | action ↓ |
+4. **N=10 for LLM results**: Due to free-tier rate limits, the full LLM evaluation was
+   run on a small sample. The confidence interval is wide. Template/NN baselines run on
+   the full 220.
 
-**Pass criterion**: corrupted replies score >0.10 below originals, and the targeted
-dimension drops the most. If a metric can't detect a known-bad reply, it's decorative.
+5. **"Would-send" rate is the metric I trust most** — and even it's judge-assessed.
+   The honest answer is: these replies are *plausible* but I can't prove they're *correct*
+   without domain expert review.
 
-### V2. Human-label correlation
+### 5. Failure Analysis: Top 5 Failure Modes
 
-50 (reply, quality 1–5) pairs hand-labeled under a documented rubric (blind to metric
-output). Report Spearman ρ between composite and human labels. Target: ρ ≥ 0.7.
+**F1. Multi-intent messages**: "My battery dies AND the screen flickers after the update"
+→ Agent picks one intent and ignores the other. The reply addresses battery but not the screen.
+*Hypothesis*: Single-label classification can't handle compound complaints.
+*Fix*: Multi-label classification + structured reply covering each issue.
 
-### V3. Inter-judge agreement
+**F2. Context-dependent issues**: "Still having the same problem" (a follow-up tweet)
+→ Agent has no conversation history, gives generic advice.
+*Hypothesis*: We only process single tweets, not threads.
+*Fix*: Thread reconstruction from the dataset's `in_response_to_tweet_id`.
 
-Same replies judged by two different models. Report Spearman ρ between judges.
-High agreement + high human correlation = the judge is reliable.
+**F3. Overly specific technical advice**: Agent sometimes suggests specific Settings paths
+that may not exist on the user's iOS version or device.
+*Hypothesis*: RAG retrieves examples from different iOS versions; LLM conflates them.
+*Fix*: Add device/OS detection and version-specific response templates.
 
----
+**F4. Escalation over-triggering on length**: Long, detailed messages get escalated even
+when the issue is straightforward (just a thorough customer).
+*Hypothesis*: Rule-based escalation conflates message length with complexity.
+*Fix*: Use semantic complexity scoring rather than surface heuristics.
 
-## Results
+**F5. DM redirect as a reply pattern**: Many real @AppleSupport replies just redirect to DM.
+The agent can't replicate this because DM links aren't available. This makes ROUGE-L
+artificially low — the reference says "DM us" but our agent gives actual troubleshooting.
+*Hypothesis*: Reference replies aren't always the *best* replies; they're the *actual* ones.
+*Fix*: This is actually a case where our agent might be *better* than the reference.
 
-See `reports/` for full per-response JSON and markdown reports after running the pipeline.
+### 6. What I'd do next with one more week
 
----
+1. **Thread reconstruction**: Build conversation trees from reply chains → multi-turn agent
+2. **Proper held-out split**: Ensure golden eval examples are NOT in training set
+3. **Cross-family judge**: Use Claude or GPT as judge to eliminate self-preference
+4. **Inter-annotator agreement**: Have 2+ people label 50 examples, measure Cohen's κ
+5. **A/B test**: Compare agent replies vs actual brand replies in a blind human eval
+6. **Confidence calibration**: When the agent is uncertain, express it rather than guessing
+7. **Banking77 integration**: Use the labeled banking intents as a transfer-learning signal
 
-## Trade-offs & Honest Limitations
+### 7. Decision Log (15 non-obvious decisions)
 
-1. **LLM-judge circularity**: our generator and judge are both LLMs. We address this with:
-   - Programmatic fact checks (the strongest signal, zero LLM involvement)
-   - Cross-family judging when possible (Gemma vs Gemini)
-   - Human calibration of the composite
-   - Perturbation tests proving the metric catches known-bad replies
+1. **AppleSupport over AmazonHelp**: Amazon has more data but Apple has more diverse technical
+   intents. Amazon support is mostly shipping/returns; Apple spans hardware + software + services.
 
-2. **Synthetic data**: cleaner and more regular than real email; stated as a limitation.
-   But it enables what real data can't: machine-checkable ground truth per scenario.
+2. **10 intents, not 5 or 20**: 5 is too coarse (lumps battery with performance); 20 is too
+   fine (splits create sparse categories). 10 covers the intent space without data starvation.
 
-3. **Free-tier API rate limits**: dataset build is slow (~90 min). Pre-built dataset ships
-   in `data/corpus/`. Mock mode (`LLM_BACKEND=mock`) runs the whole pipeline offline.
+3. **Keyword classifier as baseline, not random**: Random would be a truly trivial baseline but
+   wouldn't tell us anything. Keywords are the simplest *useful* baseline — a hiring manager's
+   "could an intern do this without ML" test.
 
-4. **Embedding quality**: Gemini embeddings are good but not SOTA; hybrid retrieval
-   (semantic + lexical) compensates for embedding blind spots on exact tokens.
+4. **TF-IDF over embeddings for retrieval**: Gemini embeddings would be better but cost API
+   calls. TF-IDF is zero-cost, fast, and captures the domain-specific terms ("iOS 11.1",
+   "battery drain") that matter most in support.
 
-5. **Weight subjectivity**: the 0.30/0.25/0.20/0.15/0.10 split encodes our belief about
-   what matters in support. We validate it against human judgments and report alternative
-   weight correlations.
+5. **5000 subsample, not full 106K**: Assignment says subsample is expected. 5K is enough to
+   cover all intents and gives fast iteration. Full dataset would improve retrieval quality but
+   not change the evaluation methodology.
+
+6. **Golden set from same pool as training**: This was a mistake I discovered during evaluation
+   (NN gets ROUGE=1.0). Documented honestly rather than silently fixed.
+
+7. **Rule-based escalation + LLM**: Pure rule-based is interpretable and auditable; LLM adds
+   nuance. Shipping both lets us measure the value of the LLM layer.
+
+8. **LLM-as-judge with reference reply**: Including the reference gives the judge a quality
+   anchor but risks anchoring bias. Without it, the judge has no standard. Chose to include it.
+
+9. **"Would-send" as the trust metric**: Binary yes/no is more decision-relevant than a 1-5
+   scale. A support manager doesn't care if a reply is 3.7 vs 4.2; they care "can I send this?"
+
+10. **Temperature 0 for judge, 0.4 for generator**: Judge needs deterministic scoring;
+    generator needs some creativity to avoid verbatim copying from examples.
+
+11. **Not fine-tuning**: 5K examples is marginal for fine-tuning, and fine-tuned facts go stale.
+    RAG keeps facts fresh and is more appropriate for a support agent.
+
+12. **Excluding DM-redirect replies from training**: Replies that just say "DM us" teach the
+    agent nothing about problem-solving. Keeping them would inflate retrieval hits on generic
+    responses.
+
+13. **Escalation keywords include profanity**: Real support needs to handle angry customers.
+    Filtering profanity from the escalation detector would miss genuine escalation signals.
+
+14. **Single-turn only**: Multi-turn would be better but requires thread reconstruction and
+    adds architectural complexity. Single-turn is the honest scope for this timeline.
+
+15. **Publishing all prompts**: Every LLM prompt is in the source code, not hidden behind
+    an abstraction. Reproducibility requires seeing the exact instructions.
 
 ---
 
 ## How AI Tools Were Used
 
-Transparency, as requested:
-
 | Tool | What it did | Human oversight |
 |------|------------|----------------|
-| **GLM 5.3 (DeepSeek Harness)** | Wrote all code, designed the architecture, authored scenario templates, ran experiments | Human reviewed every design decision, validated test results, authored the weight rationale and metric defense |
-| **Gemini Flash Lite** | Realized synthetic emails/replies from structured templates | Programmatic gates validated every output; rejected+regenerated failures |
-| **Gemini Flash** | Generated suggested replies (the system under evaluation) | Output evaluated by the metric suite |
-| **Gemini/Gemma models** | LLM judge for coverage, faithfulness, tone, action scoring | Cross-family judging; deterministic fact checks as independent signal; human calibration |
-
-All prompts, templates, and seeds are published in this repo for full reproducibility.
+| **GLM 5.3 (DeepSeek Harness)** | Wrote code, designed architecture, ran experiments | Human reviewed all design decisions, defined intents from data analysis, wrote the decision log and failure analysis |
+| **Gemini Flash Lite** | Intent classification, reply generation, escalation routing (the system under evaluation) | Evaluated by the metric suite + golden labels |
+| **Gemini Flash Lite** | LLM-as-judge for reply quality scoring | Self-preference bias documented; human calibration planned |
 
 ---
 
@@ -347,39 +224,26 @@ All prompts, templates, and seeds are published in this repo for full reproducib
 
 ```
 data/
-  knowledge_base.yaml         # the company's closed world
-  corpus/
-    train.jsonl               # ~340 (email, reply, facts) pairs for RAG
-    test.jsonl                # ~70 held-out test pairs
-    demo.jsonl                # 5 examples for quick demo
-  dataset_manifest.json       # build report: seed, counts, rejection log
-  calibration/
-    hand_labels.jsonl          # 50 human labels for metric validation
-    rubric.md                  # the rubric used for hand labeling
-src/email_reply/
-  __init__.py
-  __main__.py                 # CLI entry point
-  llm.py                      # unified LLM client (Gemini/OpenAI/Mock)
-  run.py                      # end-to-end pipeline orchestrator
-  dataset/
-    synth.py                  # scenario skeleton builder
-    build.py                  # LLM realization + gate validation
-  gen/
-    retrieve.py               # hybrid retriever (semantic + lexical)
-    generate.py               # RAG reply generator
-  eval/
-    facts.py                  # programmatic fact checks (deterministic)
-    judge.py                  # LLM judge (coverage, faithfulness, tone, action)
-    composite.py              # composite scoring with gates
-    validate.py               # metric validation (perturbation, correlation)
+  raw/apple_pairs.jsonl          # 106K raw AppleSupport pairs
+  processed/apple_clean.jsonl    # 5K cleaned subsample
+  golden_eval/
+    golden_200.jsonl             # 220 hand-labeled examples
+    labeling_methodology.md      # how the golden set was built
+scripts/
+  preprocess.py                  # data cleaning pipeline
 reports/
-  report_rag.json             # per-response + overall scores
-  report_rag.md               # human-readable markdown report
+  eval_template.json             # template baseline results
+  eval_nn.json                   # nearest-neighbor baseline results
+  eval_llm.json                  # LLM agent results (with judge)
+src/email_reply/
+  agent.py                       # core pipeline (intent + reply + escalation)
+  evaluate.py                    # evaluation harness (metrics + judge)
+  pipeline.py                    # runner for eval modes
+  llm.py                         # LLM client (Gemini + mock)
 tests/
-  test_core.py                # 23 unit tests (zero API calls)
-DESIGN.md                     # full technical design document
-Makefile                      # build/run commands
-pyproject.toml                # project config
+  test_core.py                   # unit tests
+Makefile
+README.md                        # this file (the report)
 ```
 
 ---
@@ -387,3 +251,8 @@ pyproject.toml                # project config
 ## License
 
 MIT
+
+## Dataset License
+
+The Customer Support on Twitter dataset is licensed under CC-BY-NC-SA-4.0.
+See: https://www.kaggle.com/datasets/thoughtvector/customer-support-on-twitter

@@ -1,0 +1,308 @@
+{
+  "mode": "llm",
+  "n": 10,
+  "intent": {
+    "accuracy": 0.6,
+    "n": 10,
+    "per_class": {
+      "account_icloud": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 2
+      },
+      "app_issue": {
+        "precision": 0.0,
+        "recall": 0,
+        "f1": 0,
+        "support": 0
+      },
+      "audio_media": {
+        "precision": 1.0,
+        "recall": 0.5,
+        "f1": 0.667,
+        "support": 2
+      },
+      "battery_power": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 1
+      },
+      "connectivity": {
+        "precision": 0,
+        "recall": 0.0,
+        "f1": 0,
+        "support": 1
+      },
+      "general_inquiry": {
+        "precision": 1.0,
+        "recall": 0.5,
+        "f1": 0.667,
+        "support": 2
+      },
+      "hardware": {
+        "precision": 0.0,
+        "recall": 0,
+        "f1": 0,
+        "support": 0
+      },
+      "performance": {
+        "precision": 0.0,
+        "recall": 0,
+        "f1": 0,
+        "support": 0
+      },
+      "screen_display": {
+        "precision": 0,
+        "recall": 0.0,
+        "f1": 0,
+        "support": 1
+      },
+      "software_update": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 1
+      }
+    }
+  },
+  "escalation": {
+    "precision": 0.4,
+    "recall": 1.0,
+    "f1": 0.571,
+    "tp": 2,
+    "fp": 3,
+    "fn": 0,
+    "tn": 5,
+    "accuracy": 0.7
+  },
+  "judge": {
+    "mean_relevance": 4.9,
+    "mean_helpfulness": 4.3,
+    "mean_accuracy": 5.0,
+    "mean_brand_voice": 4.9,
+    "mean_escalation_app": 4.7,
+    "mean_overall": 4.75,
+    "would_send_rate": 0.9,
+    "n_judged": 10
+  },
+  "automated": {
+    "mean_rouge_l": 0.4048,
+    "mean_length_score": 1.0,
+    "mean_keyword_overlap": 0.2144
+  },
+  "per_response": [
+    {
+      "id": 0,
+      "customer_text": "Tried both, wi-fi and cellular, nothing’s working. Yes, I’m an Apple Music subscriber.",
+      "generated_reply": "Let's take a closer look at this together. Send us a DM, and we'll continue working on it there. https://t.co/GDrqU22YpT",
+      "reference_reply": "Let's take a closer look at this issue together. Send us a DM, and we'll continue together there. https://t.co/GDrqU22YpT",
+      "intent_pred": "audio_media",
+      "intent_label": "audio_media",
+      "escalate_pred": true,
+      "escalate_label": false,
+      "rouge_l": 0.8718,
+      "mode": "llm",
+      "judge": {
+        "overall": 4.3,
+        "relevance": 4.0,
+        "helpfulness": 3.0,
+        "accuracy": 5.0,
+        "brand_voice": 5.0,
+        "critique": "It appropriately routes the customer to a DM for account-specific troubleshooting, though it lacks any immediate on-thread troubleshooting steps.",
+        "would_send": true
+      }
+    },
+    {
+      "id": 1,
+      "customer_text": "Maps isn’t working. Restarted phone. Keep saying timed out.",
+      "generated_reply": "Let's get Maps working again. Which iOS version are you currently running? Check out these troubleshooting steps as well: https://t.co/jiMIBQw7go",
+      "reference_reply": "Let’s get that working again. Which iOS version are you running? Check this out for help as well: https://t.co/jiMIBQw7go",
+      "intent_pred": "app_issue",
+      "intent_label": "general_inquiry",
+      "escalate_pred": false,
+      "escalate_label": false,
+      "rouge_l": 0.7179,
+      "mode": "llm",
+      "judge": {
+        "overall": 5.0,
+        "relevance": 5.0,
+        "helpfulness": 5.0,
+        "accuracy": 5.0,
+        "brand_voice": 5.0,
+        "critique": "The generated reply is almost identical to the successful historical reply, effectively addressing the Maps issue, asking for the necessary iOS version, and providing a helpful troubleshooting link.",
+        "would_send": true
+      }
+    },
+    {
+      "id": 2,
+      "customer_text": "hii my battery life been draining alot lately even if i don't use it, it goes from 100% to 80",
+      "generated_reply": "We want to help with that unexpected battery drain. To check what's using power in the background, go to Settings > Battery and let us know which apps show the highest usage.",
+      "reference_reply": "We’d like to help explore your battery life further with you. At this point can you start by confirming what apps use the most battery via Direct Message? We’ll use this information to determine where to get started: https://t.co/2voRgjSsVf https://t.co/GDrqU22YpT",
+      "intent_pred": "battery_power",
+      "intent_label": "battery_power",
+      "escalate_pred": false,
+      "escalate_label": false,
+      "rouge_l": 0.1667,
+      "mode": "llm",
+      "judge": {
+        "overall": 5.0,
+        "relevance": 5.0,
+        "helpfulness": 5.0,
+        "accuracy": 5.0,
+        "brand_voice": 5.0,
+        "critique": "The response is well-structured, accurate, and provides immediate actionable troubleshooting steps without prematurely forcing a DM.",
+        "would_send": true
+      }
+    },
+    {
+      "id": 3,
+      "customer_text": "I am unable to log in I am being told I don't have a Apple ID but I do and need help with access",
+      "generated_reply": "Getting locked out of your Apple ID is frustrating, and we want to help you get back in. Connect with our account recovery specialists here so we can verify your details and restore access: https://t.co/ggVDoc1mU7",
+      "reference_reply": "Being able to access your Apple ID is important, connect with our Apple ID team here: https://t.co/ggVDoc1mU7",
+      "intent_pred": "account_icloud",
+      "intent_label": "account_icloud",
+      "escalate_pred": true,
+      "escalate_label": false,
+      "rouge_l": 0.3077,
+      "mode": "llm",
+      "judge": {
+        "overall": 4.85,
+        "relevance": 5.0,
+        "helpfulness": 5.0,
+        "accuracy": 5.0,
+        "brand_voice": 4.0,
+        "critique": "The generated reply is slightly wordier than typical @AppleSupport tweets, but it is accurate, empathetic, and provides the correct escalation link.",
+        "would_send": true
+      }
+    },
+    {
+      "id": 4,
+      "customer_text": "I dropped my ipad and this happened @AppleSupport Ipad 3 wifi and cellular",
+      "generated_reply": "Drop-related issues can definitely be tough on hardware. Since physical impacts can affect internal components and the screen, let's get you connected with our team for a hands-on look. Send us a DM to explore your repair options: https://t.co/GDrqU22YpT",
+      "reference_reply": "We're glad to hear you ended up fixing it. Send us a DM if you need any help from us. We're here for you! https://t.co/GDrqU22YpT",
+      "intent_pred": "hardware",
+      "intent_label": "connectivity",
+      "escalate_pred": true,
+      "escalate_label": false,
+      "rouge_l": 0.1875,
+      "mode": "llm",
+      "judge": {
+        "overall": 5.0,
+        "relevance": 5.0,
+        "helpfulness": 5.0,
+        "accuracy": 5.0,
+        "brand_voice": 5.0,
+        "critique": "The generated reply is vastly superior to the hallucinated historical reply, accurately addressing physical damage and offering the correct escalation path.",
+        "would_send": true
+      }
+    },
+    {
+      "id": 5,
+      "customer_text": "Been to your Apple Store in Highpoint-VIC Australia. Received pathetic service and was asked are we expecting you, if we are not we cant help. For the first time I wanted to talk to someone to fix my ",
+      "generated_reply": "That is definitely not the experience we want you to have when visiting us. We'd like to hear more details about your visit and help get your phone working—please send us a DM so we can look into this further.",
+      "reference_reply": "This is not the experience we want you to have and would like to hear more from you. Would you send us a DM with details from your visit with the link below? https://t.co/GDrqU22YpT",
+      "intent_pred": "general_inquiry",
+      "intent_label": "general_inquiry",
+      "escalate_pred": true,
+      "escalate_label": true,
+      "rouge_l": 0.4595,
+      "mode": "llm",
+      "judge": {
+        "overall": 5.0,
+        "relevance": 5.0,
+        "helpfulness": 5.0,
+        "accuracy": 5.0,
+        "brand_voice": 5.0,
+        "critique": "The generated reply perfectly captures the empathetic and professional Apple Support tone while correctly offering a direct path to resolution via DM.",
+        "would_send": true
+      }
+    },
+    {
+      "id": 6,
+      "customer_text": "excuse me why does my music app keep freezing fix your shit thxs",
+      "generated_reply": "We know how important your music is and we'd love to help get that sorted. Could you let us know which iOS version you're running in Settings > General > About?",
+      "reference_reply": "We'd love a chance to review this concern with you. Could you let us know which iOS version is showing in Settings > General > About?",
+      "intent_pred": "app_issue",
+      "intent_label": "audio_media",
+      "escalate_pred": true,
+      "escalate_label": true,
+      "rouge_l": 0.5965,
+      "mode": "llm",
+      "judge": {
+        "overall": 4.7,
+        "relevance": 5.0,
+        "helpfulness": 4.0,
+        "accuracy": 5.0,
+        "brand_voice": 5.0,
+        "critique": "The response is slightly more wordy than the actual brand reply, but maintains excellent tone and directly addresses the troubleshooting path.",
+        "would_send": true
+      }
+    },
+    {
+      "id": 7,
+      "customer_text": "Since 2 days. ios version 11.0.2",
+      "generated_reply": "Thanks for sharing your iOS version. Have you had a chance to restart your iPhone since noticing this issue? Send us a DM with the result and we'll take a closer look. https://t.co/GDrqU22YpT",
+      "reference_reply": "Does restarting your iPhone have any impact on the issue? DM us the answer and we'll continue support there. https://t.co/GDrqU22YpT",
+      "intent_pred": "software_update",
+      "intent_label": "software_update",
+      "escalate_pred": false,
+      "escalate_label": false,
+      "rouge_l": 0.3019,
+      "mode": "llm",
+      "judge": {
+        "overall": 4.75,
+        "relevance": 5.0,
+        "helpfulness": 4.0,
+        "accuracy": 5.0,
+        "brand_voice": 5.0,
+        "critique": "The generated reply is slightly wordier than typical AppleSupport brevity, but it maintains high quality, accuracy, and tone.",
+        "would_send": true
+      }
+    },
+    {
+      "id": 8,
+      "customer_text": "Yup not receiving nor sending on my Mac. It stopped working something in the last 12hrs. iCloud works but push is not working. So whatever changes u make on your device is not pushed to the Mac until ",
+      "generated_reply": "Not having your changes push automatically to your Mac can definitely slow things down. To help us get this syncing correctly, which version of macOS is your Mac currently running?",
+      "reference_reply": "Let's take a closer look at both of your issues, starting with iCloud not syncing. What is it not syncing, and have you tried any steps so far? Which Mac model do you have and which exact OS version number is installed? Let us know in DM. https://t.co/GDrqU22YpT",
+      "intent_pred": "account_icloud",
+      "intent_label": "account_icloud",
+      "escalate_pred": false,
+      "escalate_label": false,
+      "rouge_l": 0.1282,
+      "mode": "llm",
+      "judge": {
+        "overall": 4.25,
+        "relevance": 5.0,
+        "helpfulness": 3.0,
+        "accuracy": 5.0,
+        "brand_voice": 5.0,
+        "critique": "The generated reply fails to invite the user to DM for troubleshooting, which is necessary for a multi-step technical issue.",
+        "would_send": false
+      }
+    },
+    {
+      "id": 9,
+      "customer_text": "Excuse me @115858 @AppleSupport for as much as this iPhone X costed me, it should not be freezing and blacking out the screen🙂",
+      "generated_reply": "We understand your frustration, and we're here to help get your iPhone X running smoothly again. To narrow this down, does the screen freeze and go black while using a specific app, or does it happen randomly across the system?",
+      "reference_reply": "We agree, and we'd like to offer help with that. To start, can you tell us if this occurs when using specific applications or features? Also, how often does it occur?",
+      "intent_pred": "performance",
+      "intent_label": "screen_display",
+      "escalate_pred": false,
+      "escalate_label": false,
+      "rouge_l": 0.3099,
+      "mode": "llm",
+      "judge": {
+        "overall": 4.65,
+        "relevance": 5.0,
+        "helpfulness": 4.0,
+        "accuracy": 5.0,
+        "brand_voice": 5.0,
+        "critique": "The generated reply is slightly wordy compared to typical concise Apple Support tweets, but it is still highly effective and empathetic.",
+        "would_send": true
+      }
+    }
+  ],
+  "elapsed_s": 391.0
+}
